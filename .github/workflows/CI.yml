@@ -17,7 +17,7 @@ jobs:
       run: docker build . --file Dockerfile --tag omg/mdsa:latest
 
     - name: Run the Docker container
-      run: docker run omg/mdsa:latest
+      run: docker run --rm -v "$(pwd):/source" omg/mdsa:latest
 
     - name: Check container status
       run: docker ps -a
