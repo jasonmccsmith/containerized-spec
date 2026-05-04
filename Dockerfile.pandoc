@@ -1,5 +1,5 @@
 # FROM python:3.10-slim
-FROM texlive/texlive:latest-small AS mdsa-base
+FROM pandoc/latex:latest-ubuntu AS mdsa-pandoc-base
 
 # Install necessary build tools and dependencies
 RUN apt-get update && apt-get install -y \
@@ -20,7 +20,7 @@ ENV PATH="/app/venv/bin:${PATH}"
 # Set working directory (set up user account?)
 WORKDIR /app
 
-# Get the necessary LaTeX piece for MDSA templates
+# Get the necessary LaTeX pieces for MDSA templates
 RUN tlmgr install \
   appendix \
   changebar \
@@ -44,9 +44,9 @@ RUN tlmgr install \
   xifthen \
   xstring
 
-FROM mdsa-base AS mdsa
+FROM mdsa-pandoc-base AS mdsa-pandoc
 
-# Install the MDSA core and tools
+# Install the MDSA core and tools, no caches, no git repositories
 RUN git clone --depth 1 https://github.com/ObjectManagementGroup/mdsa-tools.git ./mdsa-tools
 RUN cd ./mdsa-tools ; pip --no-cache-dir install -e . ; cd ..
 RUN git clone --depth 1 https://github.com/ObjectManagementGroup/mdsa-omg-core.git ./mdsa-omg-core
@@ -83,7 +83,7 @@ RUN chmod u+x /app/install-tex-pkgs.sh
 RUN /app/install-tex-pkgs.sh
 RUN tlmgr path add
 
-# Set up launcher to pull in Makefile and latexmk setup
+# Set up launcher, equivalent to `make -f /source/Makefile`
 RUN <<EOF cat > /app/launch.sh
 #!/bin/bash
 cp "/source/Makefile.docker" ./Makefile
@@ -93,4 +93,5 @@ EOF
 RUN chmod ug+x /app/launch.sh
 
 # Default command
+# ENTRYPOINT ["make", "-f", "/source/Makefile"]
 ENTRYPOINT ["/app/launch.sh"]
