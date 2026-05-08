@@ -1,5 +1,6 @@
 # FROM python:3.10-slim
-FROM texlive/texlive:latest-small AS mdsa-base
+ARG BASEIMAGE=texlive/texlive:latest-small
+FROM ${BASEIMAGE} AS mdsa-base
 
 # Install necessary build tools and dependencies
 RUN apt-get update && apt-get install -y \
@@ -71,7 +72,7 @@ COPY user-pkgs.txt /app/user-pkgs.txt
 RUN <<EOF cat > /app/install-tex-pkgs.sh
 REQUIREMENTS="/app/user-pkgs.txt"
 installed=\$(tlmgr list --only-installed --data name)
-for pkg in \$(cat \$REQUIREMENTS); do
+for pkg in \$(cat \$REQUIREMENTS | grep -v ^#); do
     if echo "\$installed" | grep -q "\$pkg"; then
         echo "\$pkg is already installed, skipping."
         continue
@@ -86,7 +87,7 @@ RUN tlmgr path add
 # Set up launcher to pull in Makefile and latexmk setup
 RUN <<EOF cat > /app/launch.sh
 #!/bin/bash
-cp "/source/Makefile.docker" ./Makefile
+cp "/source/Makefile.mdsa" ./Makefile
 # cp "./.latexmkrc" "./build/.latexmkrc"
 make \$@
 EOF
